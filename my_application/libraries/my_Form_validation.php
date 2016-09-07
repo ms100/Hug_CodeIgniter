@@ -18,7 +18,7 @@ class My_Form_validation extends CI_Form_validation{
     public function set_rules($field, $label = '', $rules = array(), $errors = array()){
         //-----------------------如果有文件上传，把$_FILES和$_POST合并------------------------
         if(isset($_FILES) && count($_FILES) > 0){
-            $_POST = array_merge($_POST, $_FILES);
+            $_POST = array_merge($_POST, $this->restructure_files($_FILES));
             unset($_FILES);
         }
 
@@ -99,6 +99,35 @@ class My_Form_validation extends CI_Form_validation{
         return $this;
     }
 
+    private function restructure_files(array $input)
+    {
+        $output = [];
+        foreach ($input as $name => $array) {
+            foreach ($array as $field => $value) {
+                $pointer = &$output[$name];
+                if (!is_array($value)) {
+                    $pointer[$field] = $value;
+                    continue;
+                }
+                $stack = [&$pointer];
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveArrayIterator($value),
+                    \RecursiveIteratorIterator::SELF_FIRST
+                );
+                foreach ($iterator as $key => $value) {
+                    array_splice($stack, $iterator->getDepth() + 1);
+                    $pointer = &$stack[count($stack) - 1];
+                    $pointer = &$pointer[$key];
+                    $stack[] = &$pointer;
+                    if (!$iterator->hasChildren()) {
+                        $pointer[$field] = $value;
+                    }
+                }
+            }
+        }
+        return $output;
+    }
+    
     /**
      * Run the Validator 将$_FILES里的内容放到 $_POST中
      *
@@ -110,7 +139,7 @@ class My_Form_validation extends CI_Form_validation{
     public function run($group = ''){
         //-----------------------如果有文件上传，把$_FILES和$_POST合并------------------------
         if(isset($_FILES) && count($_FILES) > 0){
-            $_POST = array_merge($_POST, $_FILES);
+            $_POST = array_merge($_POST, $this->restructure_files($_FILES));
             unset($_FILES);
         }
 
