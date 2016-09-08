@@ -99,6 +99,12 @@ class My_Form_validation extends CI_Form_validation{
         return $this;
     }
 
+    /**
+     * 用来变换$_FILES的数组格式
+     * @param array $input
+     *
+     * @return array
+     */
     private function restructure_files(array $input)
     {
         $output = [];
@@ -114,13 +120,13 @@ class My_Form_validation extends CI_Form_validation{
                     new \RecursiveArrayIterator($value),
                     \RecursiveIteratorIterator::SELF_FIRST
                 );
-                foreach ($iterator as $key => $value) {
+                foreach ($iterator as $k => $v) {
                     array_splice($stack, $iterator->getDepth() + 1);
                     $pointer = &$stack[count($stack) - 1];
-                    $pointer = &$pointer[$key];
+                    $pointer = &$pointer[$k];
                     $stack[] = &$pointer;
                     if (!$iterator->hasChildren()) {
-                        $pointer[$field] = $value;
+                        $pointer[$field] = $v;
                     }
                 }
             }
