@@ -1,23 +1,17 @@
 <?php
 /**
  * CodeIgniter
- *
  * An open source application development framework for PHP
- *
  * This content is released under the MIT License (MIT)
- *
  * Copyright (c) 2014 - 2016, British Columbia Institute of Technology
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the 'Software'), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
  * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,19 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *
- * @package    CodeIgniter
- * @author    EllisLab Dev Team
+ * @package      CodeIgniter
+ * @author       EllisLab Dev Team
  * @copyright    Copyright (c) 2008 - 2014, EllisLab, Inc. (https://ellislab.com/)
  * @copyright    Copyright (c) 2014 - 2016, British Columbia Institute of Technology (http://bcit.ca/)
- * @license    http://opensource.org/licenses/MIT	MIT License
- * @link    https://codeigniter.com
- * @since    Version 1.0.0
+ * @license      http://opensource.org/licenses/MIT	MIT License
+ * @link         https://codeigniter.com
+ * @since        Version 1.0.0
  * @filesource
  */
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 $lang['form_validation_required'] = '{field}必填';
 $lang['form_validation_isset'] = '{field}必填';
+$lang['form_validation_not_array'] = '{field}格式错误';
 $lang['form_validation_valid_email'] = '{field}必须为有效的邮箱地址';
 $lang['form_validation_valid_emails'] = '{field}必须为有效的邮箱地址';
 $lang['form_validation_valid_url'] = '{field}必须为有效的超链接';
@@ -69,17 +64,16 @@ $lang['form_validation_in_list'] = '{field}必须是{param}中的一个';
 
 $lang['form_validation_min_length_gbk'] = '{field}长度不少于{param}个字符';
 $lang['form_validation_max_length_gbk'] = '{field}长度不超过{param}个字符';
+$lang['form_validation_valid_username'] = '{field}必须是手机号或邮箱';
 $lang['form_validation_valid_phone'] = '{field}必须是合法的手机号码';
 $lang['form_validation_valid_md5'] = '{field}必须是MD5加密字符串';
 $lang['form_validation_valid_card'] = '{field}必须是有效的身份证号';
-$lang['form_validation_date_greater_than'] = '{field}必须晚于{param}';
+$lang['form_validation_date_later_than'] = '{field}必须晚于{param}';
 $lang['form_validation_file_allowed_type'] = '{field}格式必须是{param}';
 $lang['form_validation_file_upload_error'] = '{field}上传失败，{param}';
 $lang['form_validation_file_size_max'] = '{field}大小不能超过{param}';
 $lang['form_validation_file_size_min'] = '{field}大小不能小于{param}';
 $lang['form_validation_image_pixel_max'] = '{field}不能超过{param}像素';
 $lang['form_validation_image_pixel_min'] = '{field}不能小于{param}像素';
-$lang['form_validation_valid_email_can_empty'] = '{field}不是有效的邮箱地址';
-$lang['form_validation_regex_match_can_empty'] = '{field}格式不正确';
 $lang['form_validation_relate_other_field'] = '{field}格式不正确';
-$lang['form_validation_valid_image'] = '{field}必须是图片';
+$lang['form_validation_not_empty_str'] = '{field}不能为空';

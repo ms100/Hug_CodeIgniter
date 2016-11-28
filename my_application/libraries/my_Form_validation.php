@@ -1,39 +1,47 @@
 <?php
 
-class My_Form_validation extends CI_Form_validation{
-    
+
+class toc_Form_validation extends CI_Form_validation
+{
+    function __construct($rules = [])
+    {
+        log_message('debug', 'Toc_Form_validation Initialized');
+        parent::__construct($rules);
+    }
+
     /**
      * Set Rules 将$_FILES里的内容放到 $_POST中
-     *
-     * This function takes an array of field names and validation
+     * This function takes an array of field names and validations
      * rules as input, any custom error messages, validates the info,
      * and stores it
      *
-     * @param    mixed $field
+     * @param    mixed  $field
      * @param    string $label
-     * @param    mixed $rules
-     * @param    array $errors
+     * @param    mixed  $rules
+     * @param    array  $errors
+     *
      * @return    CI_Form_validation
      */
-    public function set_rules($field, $label = '', $rules = array(), $errors = array()){
+    public function set_rules($field, $label = '', $rules = [], $errors = [])
+    {
         //-----------------------如果有文件上传，把$_FILES和$_POST合并------------------------
-        if(isset($_FILES) && count($_FILES) > 0){
+        if (isset($_FILES) && count($_FILES) > 0) {
             $_POST = array_merge($_POST, $this->restructure_files($_FILES));
             unset($_FILES);
         }
 
         // No reason to set rules if we have no POST data
         // or a validation array has not been specified
-        if($this->CI->input->method() !== 'post' && empty($this->validation_data)){
+        if ($this->CI->input->method() !== 'post' && empty($this->validation_data)) {
             return $this;
         }
 
         // If an array was passed via the first parameter instead of individual string
         // values we cycle through it and recursively call this function.
-        if(is_array($field)){
-            foreach($field as $row){
+        if (is_array($field)) {
+            foreach ($field as $row) {
                 // Houston, we have a problem...
-                if(!isset($row['field'], $row['rules'])){
+                if (!isset($row['field'], $row['rules'])) {
                     continue;
                 }
 
@@ -41,7 +49,7 @@ class My_Form_validation extends CI_Form_validation{
                 $label = isset($row['label']) ? $row['label'] : $row['field'];
 
                 // Add the custom error message array
-                $errors = (isset($row['errors']) && is_array($row['errors'])) ? $row['errors'] : array();
+                $errors = (isset($row['errors']) && is_array($row['errors'])) ? $row['errors'] : [];
 
                 // Here we go!
                 $this->set_rules($row['field'], $label, $row['rules'], $errors);
@@ -51,11 +59,11 @@ class My_Form_validation extends CI_Form_validation{
         }
 
         // No fields or no rules? Nothing to do...
-        if(!is_string($field) OR $field === '' OR empty($rules)){
+        if (!is_string($field) OR $field === '' OR empty($rules)) {
             return $this;
-        }elseif(!is_array($rules)){
+        } elseif (!is_array($rules)) {
             // BC: Convert pipe-separated rules string to an array
-            if(!is_string($rules)){
+            if (!is_string($rules)) {
                 return $this;
             }
 
@@ -65,42 +73,43 @@ class My_Form_validation extends CI_Form_validation{
         // If the field label wasn't passed we use the field name
         $label = ($label === '') ? $field : $label;
 
-        $indexes = array();
+        $indexes = [];
         //----------------增加一个表示是否为索引数组的字段，它的值表示索引数组所在的维度-----------------
-        $is_index_array = false;
+        $index_array_deep = false;
 
         // Is the field name an array? If it is an array, we break it apart
         // into its components so that we can fetch the corresponding POST data later
-        if(($is_array = (bool)preg_match_all('/\[(.*?)\]/', $field, $matches)) === true){
+        if (($is_array = (bool)preg_match_all('/\[(.*?)\]/', $field, $matches)) === true) {
             sscanf($field, '%[^[][', $indexes[0]);
 
-            for($i = 0, $c = count($matches[0]); $i < $c; $i++){
-                if($matches[1][$i] !== ''){
+            for ($i = 0, $c = count($matches[0]); $i < $c; $i++) {
+                if ($matches[1][$i] !== '') {
                     $indexes[] = $matches[1][$i];
-                }else{
-                    $is_index_array = $i + 1;
+                } else {
+                    $index_array_deep = $i + 1;
                 }
             }
         }
 
         // Build our master array
-        $this->_field_data[$field] = array(
+        $this->_field_data[$field] = [
             'field' => $field,
             'label' => $label,
             'rules' => $rules,
             'errors' => $errors,
             'is_array' => $is_array,
             'keys' => $indexes,
-            'is_index_array' => $is_index_array,
+            'index_array_deep' => $index_array_deep,
             'postdata' => null,
-            'error' => ''
-        );
+            'error' => '',
+        ];
 
         return $this;
     }
 
     /**
      * 用来变换$_FILES的数组格式
+     *
      * @param array $input
      *
      * @return array
@@ -133,18 +142,19 @@ class My_Form_validation extends CI_Form_validation{
         }
         return $output;
     }
-    
+
     /**
      * Run the Validator 将$_FILES里的内容放到 $_POST中
-     *
      * This function does all the work.
      *
      * @param    string $group
+     *
      * @return    bool
      */
-    public function run($group = ''){
+    public function run($group = '')
+    {
         //-----------------------如果有文件上传，把$_FILES和$_POST合并------------------------
-        if(isset($_FILES) && count($_FILES) > 0){
+        if (isset($_FILES) && count($_FILES) > 0) {
             $_POST = array_merge($_POST, $this->restructure_files($_FILES));
             unset($_FILES);
         }
@@ -153,22 +163,23 @@ class My_Form_validation extends CI_Form_validation{
 
         // Does the _field_data array containing the validation rules exist?
         // If not, we look to see if they were assigned via a config file
-        if(count($this->_field_data) === 0){
+        if (count($this->_field_data) === 0) {
             // No validation rules?  We're done...
-            if(count($this->_config_rules) === 0){
+            if (count($this->_config_rules) === 0) {
                 return false;
             }
 
-            if(empty($group)){
+            if (empty($group)) {
                 // Is there a validation rule for the particular URI being accessed?
                 $group = trim($this->CI->uri->ruri_string(), '/');
-                isset($this->_config_rules[$group]) OR $group = $this->CI->router->class . '/' . $this->CI->router->method;
+                isset($this->_config_rules[$group]) OR
+                $group = $this->CI->router->class . '/' . $this->CI->router->method;
             }
 
             $this->set_rules(isset($this->_config_rules[$group]) ? $this->_config_rules[$group] : $this->_config_rules);
 
             // Were we able to set the rules correctly?
-            if(count($this->_field_data) === 0){
+            if (count($this->_field_data) === 0) {
                 log_message('debug', 'Unable to find validation rules');
 
                 return false;
@@ -179,13 +190,18 @@ class My_Form_validation extends CI_Form_validation{
         $this->CI->lang->load('form_validation');
 
         // Cycle through the rules for each field and match the corresponding $validation_data item
-        foreach($this->_field_data as $field => &$row){
+        foreach ($this->_field_data as $field => &$row) {
             // Fetch the data from the validation_data array item and cache it in the _field_data array.
             // Depending on whether the field name is an array or a string will determine where we get it from.
-            if($row['is_array'] === true){
+            if ($row['is_array'] === true) {
                 //-------------------------此处修改为自定义的获取字段值函数--------------------------
-                $this->_field_data[$field]['postdata'] = $this->_my_reduce_array($validation_array, $row['keys'], 0, $row['is_index_array']);
-            }elseif(isset($validation_array[$field])){
+                $this->_field_data[$field]['postdata'] = $this->_my_reduce_array(
+                    $validation_array,
+                    $row['keys'],
+                    0,
+                    $row['index_array_deep']
+                );
+            } elseif (isset($validation_array[$field])) {
                 $this->_field_data[$field]['postdata'] = $validation_array[$field];
             }
             //var_dump($this->_field_data[$field]['postdata']);exit;
@@ -193,9 +209,9 @@ class My_Form_validation extends CI_Form_validation{
         // Execute validation rules
         // Note: A second foreach (for now) is required in order to avoid false-positives
         //	 for rules like 'matches', which correlate to other validation fields.
-        foreach($this->_field_data as $field => &$row){
+        foreach ($this->_field_data as $field => &$row) {
             // Don't try to validate if we have no rules set
-            if(empty($row['rules'])){
+            if (empty($row['rules'])) {
                 continue;
             }
 
@@ -204,7 +220,7 @@ class My_Form_validation extends CI_Form_validation{
 
         // Did we end up with any errors?
         $total_errors = count($this->_error_array);
-        if($total_errors > 0){
+        if ($total_errors > 0) {
             $this->_safe_form_data = true;
         }
 
@@ -212,32 +228,203 @@ class My_Form_validation extends CI_Form_validation{
         empty($this->validation_data) && $this->_reset_post_array();
 
         return ($total_errors === 0);
-
     }
 
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Executes the Validation routines
+     *
+     * @param    array
+     * @param    array
+     * @param    mixed
+     * @param    int
+     *
+     * @return    mixed
+     */
+    protected function _execute($row, $rules, $postdata = null, $cycles = 0)
+    {
+        // If the $_POST data is an array we will run a recursive call
+        //
+        // Note: We MUST check if the array is empty or not!
+        //       Otherwise empty arrays will always pass validation.
+        if (is_array($postdata) && !empty($postdata)) {
+            foreach ($postdata as $key => $val) {
+                $this->_execute($row, $rules, $val, $key);
+            }
+
+            return;
+        }
+
+        $rules = $this->_prepare_rules($rules);
+        foreach ($rules as $rule) {
+            $_in_array = false;
+
+            // We set the $postdata variable with the current data in our master array so that
+            // each cycle of the loop is dealing with the processed data from the last cycle
+            if ($row['is_array'] === true && is_array($this->_field_data[$row['field']]['postdata'])) {
+                // We shouldn't need this safety, but just in case there isn't an array index
+                // associated with this cycle we'll bail out
+                if (!isset($this->_field_data[$row['field']]['postdata'][$cycles])) {
+                    continue;
+                }
+
+                $postdata = $this->_field_data[$row['field']]['postdata'][$cycles];
+                $_in_array = true;
+            } else {
+                // If we get an array field, but it's not expected - then it is most likely
+                // somebody messing with the form on the client side, so we'll just consider
+                // it an empty field
+                if (is_array($this->_field_data[$row['field']]['postdata'])) {
+                    $postdata = [];
+                    $rule = 'not_array';
+                } else {
+                    $postdata = $this->_field_data[$row['field']]['postdata'];
+                }
+            }
+
+            // Is the rule a callback?
+            $callback = $callable = false;
+            if (is_string($rule)) {
+                if (strpos($rule, 'callback_') === 0) {
+                    $rule = substr($rule, 9);
+                    $callback = true;
+                }
+            } elseif (is_callable($rule)) {
+                $callable = true;
+            } elseif (is_array($rule) && isset($rule[0], $rule[1]) && is_callable($rule[1])) {
+                // We have a "named" callable, so save the name
+                $callable = $rule[0];
+                $rule = $rule[1];
+            }
+
+            // Strip the parameter (if exists) from the rule
+            // Rules can contain a parameter: max_length[5]
+            $param = false;
+            if (!$callable && preg_match('/(.*?)\[(.*)\]/', $rule, $match)) {
+                $rule = $match[1];
+                $param = $match[2];
+            }
+
+            // Ignore empty, non-required inputs with a few exceptions ...
+            if (
+                ($postdata === null OR $postdata === '')
+                && $callback === false
+                && $callable === false
+                && !in_array($rule, ['required', 'isset', 'matches', 'not_empty_str'], true)
+            ) {
+                continue;
+            }
+
+            // Call the function that corresponds to the rule
+            if ($callback OR $callable !== false) {
+                if ($callback) {
+                    if (!method_exists($this->CI, $rule)) {
+                        log_message('debug', 'Unable to find callback validation rule: ' . $rule);
+                        $result = false;
+                    } else {
+                        // Run the function and grab the result
+                        $result = $this->CI->$rule($postdata, $param);
+                    }
+                } else {
+                    $result = is_array($rule)
+                        ? $rule[0]->{$rule[1]}($postdata)
+                        : $rule($postdata);
+
+                    // Is $callable set to a rule name?
+                    if ($callable !== false) {
+                        $rule = $callable;
+                    }
+                }
+
+                // Re-assign the result to the master data array
+                if ($_in_array === true) {
+                    $this->_field_data[$row['field']]['postdata'][$cycles] = is_bool($result) ? $postdata : $result;
+                } else {
+                    $this->_field_data[$row['field']]['postdata'] = is_bool($result) ? $postdata : $result;
+                }
+            } elseif (!method_exists($this, $rule)) {
+                // If our own wrapper function doesn't exist we see if a native PHP function does.
+                // Users can use any native PHP function call that has one param.
+                if (function_exists($rule)) {
+                    // Native PHP functions issue warnings if you pass them more parameters than they use
+                    $result = ($param !== false) ? $rule($postdata, $param) : $rule($postdata);
+
+                    if ($_in_array === true) {
+                        $this->_field_data[$row['field']]['postdata'][$cycles] = is_bool($result) ? $postdata : $result;
+                    } else {
+                        $this->_field_data[$row['field']]['postdata'] = is_bool($result) ? $postdata : $result;
+                    }
+                } else {
+                    log_message('debug', 'Unable to find validation rule: ' . $rule);
+                    $result = false;
+                }
+            } else {
+                $result = $this->$rule($postdata, $param);
+
+                if ($_in_array === true) {
+                    $this->_field_data[$row['field']]['postdata'][$cycles] = is_bool($result) ? $postdata : $result;
+                } else {
+                    $this->_field_data[$row['field']]['postdata'] = is_bool($result) ? $postdata : $result;
+                }
+            }
+
+            // Did the rule test negatively? If so, grab the error.
+            if ($result === false) {
+                // Callable rules might not have named error messages
+                if (!is_string($rule)) {
+                    $line = $this->CI->lang->line('form_validation_error_message_not_set') . '(Anonymous function)';
+                } else {
+                    $line = $this->_get_error_message($rule, $row['field']);
+                }
+
+                // Is the parameter we are inserting into the error message the name
+                // of another field? If so we need to grab its "field label"
+                if (isset($this->_field_data[$param], $this->_field_data[$param]['label'])) {
+                    $param = $this->_translate_fieldname($this->_field_data[$param]['label']);
+                }
+
+                // Build the error message
+                $message = $this->_build_error_msg($line, $this->_translate_fieldname($row['label']), $param);
+
+                // Save the error message
+                $this->_field_data[$row['field']]['error'] = $message;
+
+                if (!isset($this->_error_array[$row['field']])) {
+                    $this->_error_array[$row['field']] = $message;
+                }
+
+                return;
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------
 
     /**
      * Traverse a multidimensional $_POST array index until the data is found
      *
-     * @param $array
-     * @param $keys
+     * @param     $array
+     * @param     $keys
      * @param int $i
-     * @param $is_index_array
+     * @param     $index_array_deep
+     *
      * @return array|null
      */
-    protected function _my_reduce_array($array, $keys, $i = 0, $is_index_array){
-        //var_dump($array, $keys, $is_index_array);
-        if(is_array($array)){
-            if(isset($keys[$i]) && isset($array[$keys[$i]])){
-                return $this->_my_reduce_array($array[$keys[$i]], $keys, ($i + 1), $is_index_array);
+    protected function _my_reduce_array($array, $keys, $i = 0, $index_array_deep)
+    {
+        //var_dump($array, $keys, $index_array_deep);
+        if (is_array($array)) {
+            if (isset($keys[$i], $array[$keys[$i]])) {
+                return $this->_my_reduce_array($array[$keys[$i]], $keys, ($i + 1), $index_array_deep);
             }
-            if($is_index_array === $i && $this->is_one_dimensional_array($array)){
+            if ($index_array_deep === $i && $this->is_one_dimensional_array($array)) {
                 return $array;
             }
-
-        }elseif(!is_array($array)){
+        } elseif (!is_array($array)) {
             // NULL must be returned for empty fields
-            if(!$is_index_array && $array !== '' && !isset($keys[$i])){
+            if (!$index_array_deep && $array !== '' && !isset($keys[$i])) {
                 return $array;
             }
         }
@@ -247,12 +434,15 @@ class My_Form_validation extends CI_Form_validation{
 
     /**
      * 判断数组是一维数组，取$_POST的值时候用到
+     *
      * @param $array
+     *
      * @return bool
      */
-    protected function is_one_dimensional_array($array){
-        foreach($array as $value){
-            if(is_array($value)){
+    protected function is_one_dimensional_array($array)
+    {
+        foreach ($array as $value) {
+            if (is_array($value)) {
                 return false;
             }
         }
@@ -265,23 +455,24 @@ class My_Form_validation extends CI_Form_validation{
      *
      * @return    void
      */
-    protected function _reset_post_array(){
-        foreach($this->_field_data as $field => $row){
+    protected function _reset_post_array()
+    {
+        foreach ($this->_field_data as $field => $row) {
             //----------------------此处把获取的值赋值会$_POST,修改为获取的为null也赋值回去------------------------
             //if($row['postdata'] !== null){
-            if($row['is_array'] === false){
+            if ($row['is_array'] === false) {
                 isset($_POST[$field]) && $_POST[$field] = $row['postdata'];
-            }else{
+            } else {
                 // start with a reference
                 $post_ref =& $_POST;
 
                 // before we assign values, make a reference to the right POST key
-                if(count($row['keys']) === 1){
+                if (count($row['keys']) === 1) {
                     $post_ref =& $post_ref[current($row['keys'])];
-                }else{
-                    foreach($row['keys'] as $val){
+                } else {
+                    foreach ($row['keys'] as $val) {
                         //---------------------字段下标不存在时创建下标-------------------------
-                        is_array($post_ref) || $post_ref = array();
+                        is_array($post_ref) || $post_ref = [];
                         isset($post_ref[$val]) || $post_ref[$val] = null;
                         $post_ref =& $post_ref[$val];
                     }
@@ -293,8 +484,14 @@ class My_Form_validation extends CI_Form_validation{
         }
     }
 
-    public function file_upload_error($error, &$param){
-        switch($error){
+    public function not_array($str)
+    {
+        return !is_array($str);
+    }
+
+    public function file_upload_error($error, &$param)
+    {
+        switch ($error) {
             case UPLOAD_ERR_OK:
                 return true;
             case UPLOAD_ERR_INI_SIZE :
@@ -327,11 +524,14 @@ class My_Form_validation extends CI_Form_validation{
 
     /**
      * 文件最大大小
+     *
      * @param $size
      * @param $max_size
+     *
      * @return bool
      */
-    public function file_size_max($size, $max_size){
+    public function file_size_max($size, $max_size)
+    {
         $max_size_bit = $this->let_to_bit($max_size);
 
         return $size > $max_size_bit ? false : true;
@@ -339,24 +539,29 @@ class My_Form_validation extends CI_Form_validation{
 
     /**
      * 文件最小大小
+     *
      * @param $size
      * @param $min_size
+     *
      * @return bool
      */
-    public function file_size_min($size, $min_size){
+    public function file_size_min($size, $min_size)
+    {
         $min_size_bit = $this->let_to_bit($min_size);
 
         return $size < $min_size_bit ? false : true;
     }
 
-
     /**
      * 检查文件上传类型
+     *
      * @param $name
      * @param $type
+     *
      * @return bool
      */
-    public function file_allowed_type($name, &$type){
+    public function file_allowed_type($name, &$type)
+    {
         // get file ext
         $file_ext = strtolower(trim(strrchr($name, '.'), '.'));
 
@@ -364,56 +569,56 @@ class My_Form_validation extends CI_Form_validation{
         $ext_arr = explode(',', $type);
 
         $type = '';
-        $ext_groups = array(
-            'image' => array(
+        $ext_groups = [
+            'image' => [
                 'jpg',
                 'jpeg',
                 'gif',
-                'png'
-            ),
-            'application' => array(
+                'png',
+            ],
+            'application' => [
                 'exe',
                 'dll',
                 'so',
-                'cgi'
-            ),
-            'php_code' => array(
+                'cgi',
+            ],
+            'php_code' => [
                 'php',
                 'php4',
                 'php5',
                 'inc',
-                'phtml'
-            ),
-            'word_document' => array(
+                'phtml',
+            ],
+            'word_document' => [
                 'rtf',
                 'doc',
-                'docx'
-            ),
-            'compressed' => array(
+                'docx',
+            ],
+            'compressed' => [
                 'zip',
                 'gzip',
                 'tar',
-                'gz'
-            ),
-            'text' => array(
+                'gz',
+            ],
+            'text' => [
                 'csv',
-                'txt'
-            ),
-        );
+                'txt',
+            ],
+        ];
 
 
         // is $type array? run self recursively
-        foreach($ext_arr as $ext){
+        foreach ($ext_arr as $ext) {
             // is type a group type? image, application, word_document, code, zip .... -> load proper array
             isset($ext_groups[$ext]) && $ext = $ext_groups[$ext];
 
-            if(is_array($ext)){
-                if(in_array($file_ext, $ext)){
+            if (is_array($ext)) {
+                if (in_array($file_ext, $ext)) {
                     return true;
                 }
                 $type .= ',.' . implode(',.', $ext);
-            }else{
-                if($file_ext == $ext){
+            } else {
+                if ($file_ext == $ext) {
                     return true;
                 }
                 $type .= ',.' . $ext;
@@ -424,10 +629,10 @@ class My_Form_validation extends CI_Form_validation{
         return false;
     }
 
-
-    public function valid_image($tmp_name, $name){
+    public function valid_image($tmp_name, $name)
+    {
         $mime = getimagesize($tmp_name);
-        if($mime){
+        if ($mime) {
             $ext = image_type_to_extension($mime[2]);
             $this->_field_data[$name]['postdata'] .= $ext;
 
@@ -437,37 +642,39 @@ class My_Form_validation extends CI_Form_validation{
         return false;
     }
 
-    public function file_disallowed_type($file, &$type){
+    public function file_disallowed_type($file, &$type)
+    {
         $rc = $this->file_allowed_type($file, $type);
 
         return !$rc;
     }
 
-
     /**
      * given an string in format of ###AA converts to number of bits it is assignin
      *
      * @param string $sValue
+     *
      * @return integer number of bits
      */
-    protected function let_to_bit($sValue){
+    protected function let_to_bit($sValue)
+    {
         // Split value from name
-        if(!preg_match('/([0-9]+)([ptgmkb]{1,2}|)/ui', $sValue, $aMatches)){ // Invalid input
+        if (!preg_match('/([0-9]+)([ptgmkb]{1,2}|)/ui', $sValue, $aMatches)) { // Invalid input
             return false;
         }
 
-        if(empty ($aMatches [2])){ // No name -> Enter default value
+        if (empty ($aMatches [2])) { // No name -> Enter default value
             $aMatches [2] = 'KB';
         }
 
-        if(strlen($aMatches [2]) == 1){ // Shorted name -> full name
+        if (strlen($aMatches [2]) == 1) { // Shorted name -> full name
             $aMatches [2] .= 'B';
         }
 
         $iBit = (substr($aMatches [2], -1) == 'B') ? 1024 : 1000;
         // Calculate bits:
 
-        switch(strtoupper(substr($aMatches [2], 0, 1))){
+        switch (strtoupper(substr($aMatches [2], 0, 1))) {
             case 'P' :
                 $aMatches [1] *= $iBit;
             case 'T' :
@@ -490,21 +697,23 @@ class My_Form_validation extends CI_Form_validation{
      *
      * @param $file
      * @param $param
+     *
      * @return bool
      */
-    public function image_pixel_max($file, &$param){
+    public function image_pixel_max($file, &$param)
+    {
         $limit = explode(',', $param);
 
-        if(count($limit) !== 2){
+        if (count($limit) !== 2) {
             return false;
         }
         $param = $limit[0] . '×' . $limit[1];
 
         $d = @getimagesize($file);
-        if(!$d){
+        if (!$d) {
             return false;
         }
-        if($d[0] > $limit[0] || $d[1] > $limit[1]){
+        if ($d[0] > $limit[0] || $d[1] > $limit[1]) {
             return false;
         }
 
@@ -516,39 +725,44 @@ class My_Form_validation extends CI_Form_validation{
      *
      * @param $file
      * @param $param
+     *
      * @return bool
      */
-    public function image_pixel_min($file, &$param){
+    public function image_pixel_min($file, &$param)
+    {
         $limit = explode(',', $param);
 
-        if(count($limit) !== 2){
+        if (count($limit) !== 2) {
             return false;
         }
         $param = $limit[0] . '×' . $limit[1];
 
         $d = @getimagesize($file);
-        if(!$d){
+        if (!$d) {
             return false;
         }
 
-        if($d[0] < $limit[0] || $d[1] < $limit[1]){
+        if ($d[0] < $limit[0] || $d[1] < $limit[1]) {
             return false;
         }
 
         return true;
     }
 
-
     /**
      * 关联其他字段验证 用法：relate_other_field[关联字段名，关联字段默认值，验证规则，验证规则参数[，验证规则参数[，验证规则参数]]]
+     *
      * @param $str
      * @param $param
+     *
      * @return bool
      */
-    public function relate_other_field($str, $param){
-        if(trim($str) == ''){
+    public function relate_other_field($str, $param)
+    {
+        if (!isset ($str) || $str == '') {
             return true;
         }
+
         $arr = explode(',', $param, 4);
         $other_field = $arr[0];
         $default_value = $arr[1];
@@ -556,54 +770,66 @@ class My_Form_validation extends CI_Form_validation{
         $rule = isset($arr[3]) ? $arr[3] : null;
 
         $value = $this->_field_data[$other_field]['postdata'];
-        if($value == $default_value){
+        if ($value == $default_value) {
             return true;
         }
 
-        if(method_exists($this, $func)){
-            if(isset($rule)){
+        if (method_exists($this, $func)) {
+            if (isset($rule)) {
                 return $this->{$func}($str, $rule);
-            }else{
+            } else {
                 return $this->{$func}($str);
             }
-        }else{
-            if(isset($rule)){
+        } else {
+            if (isset($rule)) {
                 return $func($str, $rule);
-            }else{
+            } else {
                 return $func($str);
             }
         }
-
     }
 
     /**
      * 验证身份证
+     *
      * @param $str
+     *
      * @return bool
      */
-    public function valid_card($str){
-        if(!isset ($str) || $str == ''){
+    public function valid_card($str)
+    {
+        if (!isset ($str) || $str == '') {
             return true;
         }
 
-        if(!preg_match('/^(\d{15})|(\d{18})|(\d{17}(X|x))$/', $str)){
+        if (!preg_match('/^\d{15}(?:\d{2}(?:\d|X|x))?$/', $str)) {
             return false;
         }
 
         //----------------------对十八位身份证做校验-----------------------
-        if(strlen($str) == 18){
-            $w = array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2);
-            $c = array(1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2);
+        if (strlen($str) == 18) {
+            $birth = substr($str, 6, 8);
+            if (date('Ymd', strtotime($birth)) != $birth) {
+                return false;
+            }
+
+            $w = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+            $c = [1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2];
 
             $sum = 0;
-            foreach($w as $key => $value){
+            foreach ($w as $key => $value) {
                 $sum += $value * $str{$key};
             }
 
             $r = $sum % 11;
             $res = $c[$r];
 
-            if($res != strtoupper($str{17})){
+            if ($res != strtoupper($str{17})) {
+                return false;
+            }
+        } else {
+            $birth = substr($str, 6, 6);
+            if (date('ymd', strtotime('19' . $birth)) != $birth) {
                 return false;
             }
         }
@@ -612,12 +838,32 @@ class My_Form_validation extends CI_Form_validation{
     }
 
     /**
-     * 验证手机号
+     * 验证用户帐号类型正确，现在为手机号和邮箱
+     *
      * @param $str
+     *
+     * @return string
+     * @throws Exception
+     */
+    public function valid_username($str)
+    {
+        if (!isset($str) || $str == '') {
+            return true;
+        }
+
+        return filter_var($str, FILTER_VALIDATE_EMAIL) ? true : $this->valid_phone($str);
+    }
+
+    /**
+     * 验证手机号
+     *
+     * @param $str
+     *
      * @return bool
      */
-    public function valid_phone($str){
-        if(!isset($str) || $str == ''){
+    public function valid_phone($str)
+    {
+        if (!isset($str) || $str == '') {
             return true;
         }
 
@@ -625,14 +871,32 @@ class My_Form_validation extends CI_Form_validation{
     }
 
     /**
-     * 验证是MD5加密过的字符串
+     * 验证电话号码
      *
      * @param $str
-     * @param int $length
+     *
      * @return bool
      */
-    public function valid_md5($str, $length = null){
-        if(!isset($str) || $str == ''){
+    public function valid_tel($str)
+    {
+        if (!isset($str) || $str == '') {
+            return true;
+        }
+
+        return preg_match("/^\d+(?:\-\d+)*$/ix", $str) ? true : false;
+    }
+
+    /**
+     * 验证是MD5加密过的字符串
+     *
+     * @param     $str
+     * @param int $length
+     *
+     * @return bool
+     */
+    public function valid_md5($str, $length = null)
+    {
+        if (!isset($str) || $str == '') {
             return true;
         }
         empty($length) && $length = 32;
@@ -641,37 +905,25 @@ class My_Form_validation extends CI_Form_validation{
         return preg_match('/^[a-fA-F0-9]{' . $length . '}$/', $str) ? true : false;
     }
 
-    public function valid_email_can_empty($str){
-        if(!isset($str) || $str == ''){
-            return true;
-        }
-
-        return parent::valid_email($str);
-        //return (!preg_match("/^[a-z0-9]([\._\-]?[a-z0-9]+)*@[a-z0-9]([_\-]?[a-z0-9]+)*(\.[a-z0-9]([_\-]?[a-z0-9]+)*)+$/ix", $str)) ? false : true;
-    }
-
-
-    public function regex_match_can_empty($str, $regex){
-        if($str == ''){
-            return true;
-        }
-
-        return parent::regex_match($str, $regex);
-    }
-
-
     /**
      * 判断字符长度，中文2个字节，英文1个字节
+     *
      * @param $str
      * @param $val
+     *
      * @return bool
      */
-    public function max_length_gbk($str, $val){
-        if(preg_match("/[^0-9]/", $val)){
+    public function max_length_gbk($str, $val)
+    {
+        if (!isset ($str) || $str == '') {
+            return true;
+        }
+
+        if (preg_match("/[^0-9]/", $val)) {
             return false;
         }
 
-        if(function_exists('mb_strlen')){
+        if (function_exists('mb_strlen')) {
             //return (mb_strlen($str, 'gb2312') > $val) ? FALSE : TRUE; //效率太低，下面的方式比它快4到5倍
             return (((strlen($str) + mb_strlen($str, 'UTF-8')) / 2) > $val) ? false : true;
         }
@@ -684,14 +936,20 @@ class My_Form_validation extends CI_Form_validation{
      *
      * @param $str
      * @param $val
+     *
      * @return bool
      */
-    public function min_length_gbk($str, $val){
-        if(preg_match("/[^0-9]/", $val)){
+    public function min_length_gbk($str, $val)
+    {
+        if (!isset ($str) || $str == '') {
+            return true;
+        }
+
+        if (preg_match("/[^0-9]/", $val)) {
             return false;
         }
 
-        if(function_exists('mb_strlen')){
+        if (function_exists('mb_strlen')) {
             //return (mb_strlen($str, 'gb2312') < $val) ? FALSE : TRUE; //效率太低，下面的方式比它快4到5倍
             return (((strlen($str) + mb_strlen($str, 'UTF-8')) / 2) < $val) ? false : true;
         }
@@ -702,37 +960,52 @@ class My_Form_validation extends CI_Form_validation{
     /**
      * 时间大于某个字段
      *
-     * @param $end
-     * @param $start
+     * @param $end_str
+     * @param $start_str
+     *
      * @return bool
      */
-    public function date_greater_than($end, $start){
-        $start = $this->_field_data[$start]['postdata'];
-        $start = strtr($start, array(
-            '.' => '-',
-            '年' => '-',
-            '月' => '-',
-            '日' => ''
-        ));
+    public function date_later_than($end_str, $start_str)
+    {
+        if (!isset ($end_str) || $end_str == '') {
+            return true;
+        }
 
-        $start = trim($start, '-');
+        $start = strtotime($start_str);
+        if ($start === false) {
+            $start_str = $this->_field_data[$start_str]['postdata'];
+            $start_str = strtr(
+                $start_str,
+                [
+                    '/' => '-',
+                    '.' => '-',
+                    '年' => '-',
+                    '月' => '-',
+                    '日' => '',
+                ]
+            );
 
-        $start = strtotime($start);
-        if(empty($end)){
-            $end = time();
-        }else{
-            $end = strtr($end, array(
+            $start_str = trim($start_str, '-');
+
+            $start = strtotime($start_str);
+        }
+
+
+        $end_str = strtr(
+            $end_str,
+            [
+                '/' => '-',
                 '.' => '-',
                 '年' => '-',
                 '月' => '-',
-                '日' => ''
-            ));
-            $end = trim($end, '-');
+                '日' => '',
+            ]
+        );
+        $end_str = trim($end_str, '-');
 
-            $end = strtotime($end);
-        }
+        $end = strtotime($end_str);
 
-        if($end <= $start){
+        if ($end <= $start) {
             return false;
         }
 
@@ -740,32 +1013,165 @@ class My_Form_validation extends CI_Form_validation{
     }
 
     /**
+     * 验证合法的日期
+     *
+     * @param      $str
+     * @param bool $future
+     *
+     * @return bool
+     */
+    public function valid_date($str, $future = false)
+    {
+        if (!isset ($str) || $str == '') {
+            return true;
+        }
+
+        $str = strtr(
+            $str,
+            [
+                '/' => '-',
+                '.' => '-',
+                '年' => '-',
+                '月' => '-',
+                '日' => '',
+            ]
+        );
+
+        $str = trim($str, '-');
+
+        $time = strtotime($str);
+        if ($time === false) {
+            return false;
+        }
+
+        if ($future) {
+            return $time < time() ? false : true;
+        } else {
+            return $time > time() ? false : true;
+        }
+    }
+
+    /**
      * 过滤表情符号
-     * @param $str
+     *
+     * @param      $str
      * @param null $replace
+     *
      * @return mixed|string
      */
-    public function filter_emoji($str, $replace = null){
+    public function filter_emoji($str, $replace = null)
+    {
         static $map;
-        if(!isset($map)){
-            if($this->CI->config->load('emoji', true, true)){
+        if (!isset ($str) || $str == '') {
+            return true;
+        }
+
+        if (!isset($map)) {
+            if ($this->CI->config->load('emoji', true, true)) {
                 $map = $this->CI->config->config['emoji'];
-            }else{
-                $map = array();
+            } else {
+                $map = [];
             }
         }
 
 
-        if(!empty($map) && !empty($str)){
-            $replace = empty($replace) ? '' : strtr(urlencode($replace), array('%' => '\x'));
+        if (!empty($map) && !empty($str)) {
+            $replace = empty($replace) ? '' : strtr(urlencode($replace), ['%' => '\x']);
 
-            $str = strtr(urlencode($str), array('%' => '\x'));
+            $str = strtr(urlencode($str), ['%' => '\x']);
             $str = str_ireplace($map, $replace, $str);
-            $str = strtr($str, array('\x' => '%'));
+            $str = strtr($str, ['\x' => '%']);
 
             $str = urldecode($str);
         }
 
         return $str;
+    }
+
+    /**
+     * 设置默认值
+     *
+     * @param $str
+     * @param $default
+     *
+     * @return mixed
+     */
+    public function default_value($str, $default)
+    {
+        if (!isset($str) || $str == '') {
+            $str = $default;
+        }
+        return $str;
+    }
+
+    // --------------------------------------------------------------------
+
+
+    public function not_empty_str($str)
+    {
+        if (!isset($str) || $str != '') {
+            return true;
+        }
+        return false;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Prep URL
+     *
+     * @param    string
+     *
+     * @return    string
+     */
+    public function prep_url_can_no_scheme($str = '')
+    {
+        if ($str === 'http://' OR $str === '' OR $str === '//') {
+            return '';
+        }
+
+        if (strpos($str, '//') !== 0 && strpos($str, 'http://') !== 0 && strpos($str, 'https://') !== 0) {
+            return '//' . ltrim($str, ':/');
+        }
+
+        return $str;
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Prep URL
+     *
+     * @param    string
+     *
+     * @return    string
+     */
+    public function prep_url($str = '')
+    {
+        if ($str === 'http://' OR $str === '' OR $str === '//') {
+            return '';
+        }
+
+        if (strpos($str, 'http://') !== 0 && strpos($str, 'https://') !== 0) {
+            return 'http://' . ltrim($str, ':/');
+        }
+
+        return $str;
+    }
+
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Reset _field_data vars
+     * Prevents subsequent validation routines from being affected by the
+     * results of any previous validation routine due to the CI singleton.
+     *
+     * @return    CI_Form_validation
+     */
+    public function reset_field_data()
+    {
+        $this->_field_data = [];
+        return $this;
     }
 }

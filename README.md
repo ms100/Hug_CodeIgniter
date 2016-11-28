@@ -10,8 +10,10 @@
 
 ## 1. Form_validation 表单验证
 * 新增的验证规则看my_Form_validation.php里的注释
-* $_FILES 里的数据在调用 $this->form_validation->run()之后会自动放到 $_POST 里
-* $_POST里的数据格式必须与表单验证里的配置完全对应
+* **$_FILES** 里的数据在调用 `$this->form_validation->run() 或 set_rules()` 之后会放到 **$_POST** 里；
+* **$_POST** 里的数据格式必须与表单验证里的配置的格式完全对应，否则通不过验证；
+* 更改所有CI自带的规则，字端值为空字符或null时可通过验证。举例：如果设置规则为 is_natural，那么此字端不传或传空字符都可以通过规则，若要必填，还需加上 required；
+* 增加not_empty_str的规则，表示字端可以为 null，但不能为空字符。即：前端可以不传此字段，但不能传字段=''，一般用于一个验证规则被多处使用的时候；
 
 ### 解释：
   CI本身的表单验证是有缺陷的，例如规则field设为name[],post数据是name=aaa，可以通过验证；再例如规则field设为name[type],post数据是name[type][]=aaa，也可以通过验证；而实际上我们在使用中是希望通过设置field字段能控制到post的数据格式的，如果不限制格式那么之后的代码可能会出现警告，更严重的是数据库查询会报错。
@@ -60,7 +62,7 @@
         );
 
 
-## 2.数据库支持主从和读写分离
+## 2.数据库支持多库和主从读写分离
 * SQL执行的时候才选择要链接数据库
 * 配置后会自动根据SQL语句来选择使用主库还是从库
 * 从库连接失败会自动切换到主库
@@ -107,3 +109,24 @@
             'compress' => false,
             'stricton' => true,
         );
+
+## 3.支持多缓存
+* 支持同时存在多套同类型的缓存
+* 配置类似于 **database.php**
+* 默认读取 `$cache_group`
+
+### 用法：
+
+        $cache_group = 'default';
+
+        $config['default'] = [
+            'adapter' => 'memcached',
+            'key_prefix' => 'my_',
+            'servers' => [
+                [
+                    'hostname' => '127.0.0.1',
+                    'port' => '11211',
+                    'weight' => '1',
+                ],
+            ],
+        ];
