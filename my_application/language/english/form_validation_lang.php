@@ -33,7 +33,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 $lang['form_validation_required'] = '{field}必填';
 $lang['form_validation_isset'] = '{field}必填';
-$lang['form_validation_not_array'] = '{field}格式错误';
+$lang['form_validation_not_false'] = '{field}字端格式错误';
 $lang['form_validation_valid_email'] = '{field}必须为有效的邮箱地址';
 $lang['form_validation_valid_emails'] = '{field}必须为有效的邮箱地址';
 $lang['form_validation_valid_url'] = '{field}必须为有效的超链接';
